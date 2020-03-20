@@ -47,21 +47,21 @@
    (fn [context]
      (let [nm       (get-in context [:request :query-params :name] "Unnamed List")      
            new-list (make-list nm)
-           db-id    (str (gensym "l"))]                                                 
-       (assoc context :tx-data [assoc db-id new-list])))})             
+           db-id    (str (gensym "l"))
+           url      (route/url-for :list-view :params {:list-id db-id})]                                                 
+       (assoc context
+              :response (created new-list "Location" url)
+              :tx-data [assoc db-id new-list])))})            
 
 (def routes
   (route/expand-routes
-   #{["/todo"                    :post   [db-interceptor list-create]] ]
+   #{["/todo"                    :post   [db-interceptor list-create]] 
      ["/todo"                    :get    echo :route-name :list-query-form]
      ["/todo/:list-id"           :get    echo :route-name :list-view]
      ["/todo/:list-id"           :post   echo :route-name :list-item-create]
      ["/todo/:list-id/:item-id"  :get    echo :route-name :list-item-view]
      ["/todo/:list-id/:item-id"  :put    echo :route-name :list-item-update]
      ["/todo/:list-id/:item-id"  :delete echo :route-name :list-item-delete]}))
-
-(defn test-request [verb url]
-  (io.pedestal.test/response-for (::http/service-fn @server) verb url))     
 
 (def service-map
   {::http/routes routes
@@ -85,3 +85,6 @@
 (defn restart []                                                                        
   (stop-dev)
   (start-dev))     
+
+(defn test-request [verb url]
+  (io.pedestal.test/response-for (::http/service-fn @server) verb url))  
